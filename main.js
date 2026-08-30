@@ -34,7 +34,6 @@ function createWindow () {
 
   ipcMain.handle('get-app-version', () => app.getVersion());
 
-  // Ação de Reiniciar forçada pelo Frontend (Botão verde)
   ipcMain.on('restart_app', () => { autoUpdater.quitAndInstall(); });
 
   mainWindow.loadURL('https://call.overclock.lat/');
@@ -45,9 +44,35 @@ app.whenReady().then(() => {
   autoUpdater.checkForUpdatesAndNotify();
 });
 
-// AVISO SILENCIOSO: Quando baixar, não dá pop-up nativo, apenas avisa o Front-end.
+// ==========================================
+// AVISOS DO AUTO-UPDATER PARA A TELA
+// ==========================================
+autoUpdater.on('checking-for-update', () => {
+  if (mainWindow) mainWindow.webContents.send('updater_status', 'Procurando atualizações no servidor...');
+});
+
+autoUpdater.on('update-available', () => {
+  if (mainWindow) mainWindow.webContents.send('updater_status', 'Nova versão encontrada! Baixando em segundo plano...');
+});
+
+autoUpdater.on('update-not-available', () => {
+  if (mainWindow) mainWindow.webContents.send('updater_status', 'O aplicativo está na versão mais recente.');
+});
+
+autoUpdater.on('error', (err) => {
+  if (mainWindow) mainWindow.webContents.send('updater_status', 'Erro ao atualizar: ' + err.message);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  let log_message = "Baixando atualização: " + Math.round(progressObj.percent) + '%';
+  if (mainWindow) mainWindow.webContents.send('updater_status', log_message);
+});
+
 autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) mainWindow.webContents.send('update_ready');
+  if (mainWindow) {
+      mainWindow.webContents.send('updater_status', 'Download concluído! Atualização pronta.');
+      mainWindow.webContents.send('update_ready');
+  }
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
