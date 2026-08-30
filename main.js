@@ -1,11 +1,12 @@
-const { app, BrowserWindow, session, desktopCapturer, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, session, desktopCapturer, ipcMain } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
+let mainWindow;
+
 function createWindow () {
-  const mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 720,
+  mainWindow = new BrowserWindow({
+    width: 1280, height: 720,
     title: "M.A. Call",
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.ico'),
@@ -18,59 +19,35 @@ function createWindow () {
   });
 
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (['media', 'display-capture', 'fullscreen'].includes(permission)) {
-      callback(true);
-    } else {
-      callback(false);
-    }
+    if (['media', 'display-capture', 'fullscreen'].includes(permission)) callback(true);
+    else callback(false);
   });
 
-  // BLOCO 1: Compartilhamento de Tela
   ipcMain.handle('get-desktop-sources', async () => {
-    const sources = await desktopCapturer.getSources({ 
-        types: ['window', 'screen'], 
-        thumbnailSize: { width: 320, height: 180 }, 
-        fetchWindowIcons: true 
-    });
-    
+    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'], thumbnailSize: { width: 320, height: 180 }, fetchWindowIcons: true });
     return sources.map(source => ({
-      id: source.id,
-      name: source.name,
+      id: source.id, name: source.name,
       thumbnailDataUrl: source.thumbnail ? source.thumbnail.toDataURL() : '',
       appIconDataUrl: source.appIcon ? source.appIcon.toDataURL() : null
     }));
   });
 
-  // BLOCO 2: Versão do App (AGORA SEPARADO CORRETAMENTE)
-  ipcMain.handle('get-app-version', () => {
-    return app.getVersion();
-  });
+  ipcMain.handle('get-app-version', () => app.getVersion());
 
-  mainWindow.loadURL('https://call.overclock.lat/'); // Seu domínio real
+  // Ação de Reiniciar forçada pelo Frontend (Botão verde)
+  ipcMain.on('restart_app', () => { autoUpdater.quitAndInstall(); });
+
+  mainWindow.loadURL('https://call.overclock.lat/');
 }
 
 app.whenReady().then(() => {
   createWindow();
-
-  // Aciona o verificador de atualizações assim que o app iniciar
   autoUpdater.checkForUpdatesAndNotify();
 });
 
-// Evento: Quando o download da atualização terminar em segundo plano
+// AVISO SILENCIOSO: Quando baixar, não dá pop-up nativo, apenas avisa o Front-end.
 autoUpdater.on('update-downloaded', () => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Nova Atualização Pronta',
-    message: 'Uma nova versão do M.A. Call foi baixada em segundo plano. Deseja reiniciar o aplicativo para instalar agora?',
-    buttons: ['Reiniciar e Atualizar', 'Mais Tarde']
-  }).then((result) => {
-    if (result.response === 0) {
-      // Se clicou em "Reiniciar e Atualizar", fecha e instala
-      autoUpdater.quitAndInstall();
-    }
-  });
+  if (mainWindow) mainWindow.webContents.send('update_ready');
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
