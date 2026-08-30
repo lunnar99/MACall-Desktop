@@ -25,16 +25,13 @@ function createWindow () {
     }
   });
 
+  // BLOCO 1: Compartilhamento de Tela
   ipcMain.handle('get-desktop-sources', async () => {
     const sources = await desktopCapturer.getSources({ 
         types: ['window', 'screen'], 
         thumbnailSize: { width: 320, height: 180 }, 
         fetchWindowIcons: true 
     });
-
-    ipcMain.handle('get-app-version', () => {
-    return app.getVersion();
-  });
     
     return sources.map(source => ({
       id: source.id,
@@ -44,7 +41,12 @@ function createWindow () {
     }));
   });
 
-  mainWindow.loadURL('https://call.overclock.lat/'); // Mantenha seu domínio real
+  // BLOCO 2: Versão do App (AGORA SEPARADO CORRETAMENTE)
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
+  mainWindow.loadURL('https://call.overclock.lat/'); // Seu domínio real
 }
 
 app.whenReady().then(() => {
