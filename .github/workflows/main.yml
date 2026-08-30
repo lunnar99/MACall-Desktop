@@ -1,0 +1,23 @@
+name: Build e Lançar Atualização
+on:
+  workflow_dispatch: # Isso permite que você rode a action manualmente apertando um botão no GitHub
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write # Dá permissão para o bot criar a Release no seu repositório
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Instalar Dependências
+        run: npm install
+
+      - name: Compilar EXE e Publicar Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always

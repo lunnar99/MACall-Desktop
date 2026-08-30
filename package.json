@@ -1,0 +1,29 @@
+{
+  "name": "ma-call-desktop",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.8"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.macall.app",
+    "productName": "M.A. Call",
+    "publish": [{
+      "provider": "github",
+      "owner": "SEU_USUARIO_GITHUB",
+      "repo": "NOME_DO_REPOSITORIO"
+    }],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    }
+  }
+}
