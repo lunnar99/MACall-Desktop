@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session, desktopCapturer, ipcMain } = require('electron');
+const { app, BrowserWindow, session, desktopCapturer, ipcMain, globalShortcut } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
@@ -33,8 +33,19 @@ function createWindow () {
   });
 
   ipcMain.handle('get-app-version', () => app.getVersion());
-
   ipcMain.on('restart_app', () => { autoUpdater.quitAndInstall(); });
+
+  // ATALHO GLOBAL DO MICROFONE (TOGGLE)
+  ipcMain.on('set_global_mute_shortcut', (event, shortcut) => {
+    globalShortcut.unregisterAll();
+    if (shortcut) {
+        try {
+            globalShortcut.register(shortcut, () => {
+                if (mainWindow) mainWindow.webContents.send('toggle_mute_global');
+            });
+        } catch (err) { console.error("Erro ao registrar atalho", err); }
+    }
+  });
 
   mainWindow.loadURL('https://call.overclock.lat/');
 }
@@ -44,35 +55,15 @@ app.whenReady().then(() => {
   autoUpdater.checkForUpdatesAndNotify();
 });
 
-// ==========================================
-// AVISOS DO AUTO-UPDATER PARA A TELA
-// ==========================================
-autoUpdater.on('checking-for-update', () => {
-  if (mainWindow) mainWindow.webContents.send('updater_status', 'Procurando atualizações no servidor...');
-});
-
-autoUpdater.on('update-available', () => {
-  if (mainWindow) mainWindow.webContents.send('updater_status', 'Nova versão encontrada! Baixando em segundo plano...');
-});
-
-autoUpdater.on('update-not-available', () => {
-  if (mainWindow) mainWindow.webContents.send('updater_status', 'O aplicativo está na versão mais recente.');
-});
-
-autoUpdater.on('error', (err) => {
-  if (mainWindow) mainWindow.webContents.send('updater_status', 'Erro ao atualizar: ' + err.message);
-});
-
+// AUTO-UPDATER SILENCIOSO E DECORATIVO
 autoUpdater.on('download-progress', (progressObj) => {
-  let log_message = "Baixando atualização: " + Math.round(progressObj.percent) + '%';
-  if (mainWindow) mainWindow.webContents.send('updater_status', log_message);
+  if (mainWindow) mainWindow.webContents.send('updater_progress', progressObj.percent);
 });
 
 autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) {
-      mainWindow.webContents.send('updater_status', 'Download concluído! Atualização pronta.');
-      mainWindow.webContents.send('update_ready');
-  }
+  if (mainWindow) mainWindow.webContents.send('update_ready');
 });
 
+// Limpa os atalhos ao fechar
+app.on('will-quit', () => { globalShortcut.unregisterAll(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
