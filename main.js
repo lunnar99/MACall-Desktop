@@ -31,6 +31,10 @@ function createWindow () {
         thumbnailSize: { width: 320, height: 180 }, 
         fetchWindowIcons: true 
     });
+
+    ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
     
     return sources.map(source => ({
       id: source.id,
