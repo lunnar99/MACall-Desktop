@@ -40,7 +40,7 @@ function createWindow () {
     }));
   });
 
-  mainWindow.loadURL('https://seu-dominio-vps.com'); // Mantenha seu domínio real
+  mainWindow.loadURL('https://call.overclock.lat/'); // Mantenha seu domínio real
 }
 
 app.whenReady().then(() => {
